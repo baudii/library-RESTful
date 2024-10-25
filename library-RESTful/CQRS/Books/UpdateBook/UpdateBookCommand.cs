@@ -1,9 +1,10 @@
-﻿using MediatR;
-using library_RESTful.Common;
+﻿using library_RESTful.Common;
+using MediatR;
 using System.ComponentModel.DataAnnotations;
 
 namespace library_RESTful.CQRS
 {
+
 	public record UpdateBookCommand(
 		[Required(ErrorMessage = "Id is required")]
 		[Range(1, int.MaxValue, ErrorMessage = "Id must be a positive integer")]
@@ -17,5 +18,5 @@ namespace library_RESTful.CQRS
 		string Genre,
 		[Range(0, int.MaxValue, ErrorMessage = "AuthorId must be non negative")]
 		int AuthorId
-	) : IRequest<Utils.ResultStatus>;
+	) : IRequest<CommandResult>;
 }

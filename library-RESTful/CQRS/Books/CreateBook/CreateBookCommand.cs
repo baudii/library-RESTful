@@ -1,4 +1,4 @@
-﻿using library_RESTful.Models;
+﻿using library_RESTful.Common;
 using MediatR;
 using System.ComponentModel.DataAnnotations;
 
@@ -13,9 +13,6 @@ namespace library_RESTful.CQRS
 		[Required(ErrorMessage = "Genre is required")]
 		string Genre,
 		[Range(0, int.MaxValue, ErrorMessage = "AuthorId must be non negative")]
-		int AuthorId,
-		[DataType(DataType.Text)]
-		string? AuthorFullName,
-		DateOnly? AuthorBirthday
-	) : IRequest<Book?>;
+		int AuthorId
+	) : IRequest<CommandResult>;
 }

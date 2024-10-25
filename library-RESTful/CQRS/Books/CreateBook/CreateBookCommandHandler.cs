@@ -1,10 +1,12 @@
 ﻿using library_RESTful.Data;
 using library_RESTful.Models;
+using library_RESTful.Common;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 
 namespace library_RESTful.CQRS
 {
-	public class CreateBookCommandHandler : IRequestHandler<CreateBookCommand, Book?>
+	public class CreateBookCommandHandler : IRequestHandler<CreateBookCommand, CommandResult>
 	{
 		private readonly LibraryDbContext _context;
 		public CreateBookCommandHandler(LibraryDbContext context)
@@ -12,27 +14,22 @@ namespace library_RESTful.CQRS
 			_context = context;
 		}
 
-		public async Task<Book?> Handle(CreateBookCommand request, CancellationToken cancellationToken)
+		public async Task<CommandResult> Handle(CreateBookCommand request, CancellationToken cancellationToken)
 		{
 			var author = await _context.Authors.FindAsync(request.AuthorId, cancellationToken);
 
 			if (author == null)
-			{
-				// BadRequest - Автор не был найден и не предоставлены данные
-				if (request.AuthorFullName == null || request.AuthorBirthday == null)
-					return null;
+				return new BadRequestCommandResult($"Author with id={request.AuthorId} doesn't exist");
 
-				// Создаем автора, если предоставлены данные
-				author = new Author
-				{
-					FullName = request.AuthorFullName!,
-					Birthday = (DateOnly)request.AuthorBirthday
-				};
+			var bookExists = await _context.Books.AnyAsync(b =>
+				b.Title == request.Title &&
+				b.Genre == request.Genre &&
+				b.PublishedYear == request.PublishedYear &&
+				b.AuthorId == author.Id
+			);
 
-				var created = await _context.Authors.AddAsync(author, cancellationToken);
-				author = created.Entity;
-				await _context.SaveChangesAsync(cancellationToken);
-			}
+			if (bookExists)
+				return new BadRequestCommandResult($"Identical book already exists");
 
 			var book = new Book
 			{
@@ -42,10 +39,11 @@ namespace library_RESTful.CQRS
 				AuthorId = author.Id
 			};
 
+			
 			await _context.Books.AddAsync(book, cancellationToken);
 			await _context.SaveChangesAsync(cancellationToken);
 
-			return book;
+			return new SuccessCommandResult(book);
 		}
 	}
 }

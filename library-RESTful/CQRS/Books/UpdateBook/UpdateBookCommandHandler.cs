@@ -4,25 +4,26 @@ using MediatR;
 
 namespace library_RESTful.CQRS
 {
-	public class UpdateBookCommandHandler : IRequestHandler<UpdateBookCommand, Utils.ResultStatus>
+	public class UpdateBookCommandHandler : IRequestHandler<UpdateBookCommand, CommandResult>
 	{
+
 		private readonly LibraryDbContext _context;
 		public UpdateBookCommandHandler(LibraryDbContext context)
 		{
 			_context = context;
 		}
-		public async Task<Utils.ResultStatus> Handle(UpdateBookCommand request, CancellationToken cancellationToken)
+		public async Task<CommandResult> Handle(UpdateBookCommand request, CancellationToken cancellationToken)
 		{
 			var dbBook = await _context.Books.FindAsync(request.Id, cancellationToken);
 
 			if (dbBook == null)
-				return Utils.ResultStatus.NotFound;
+				return new NotFoundCommandResult();
 
 			if (dbBook.AuthorId != request.AuthorId)
 			{
 				var newAuthor = await _context.Authors.FindAsync(request.AuthorId);
 				if (newAuthor == null)
-					return Utils.ResultStatus.BadRequest;
+					return new BadRequestCommandResult();
 			}
 
 			dbBook.Title = request.Title;
@@ -33,7 +34,7 @@ namespace library_RESTful.CQRS
 			_context.Books.Update(dbBook);
 			await _context.SaveChangesAsync(cancellationToken);
 
-			return Utils.ResultStatus.Success;
+			return new SuccessCommandResult();
 		}
 	}
 }
