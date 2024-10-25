@@ -1,7 +1,6 @@
 ﻿using FluentAssertions;
 using library_RESTful.CQRS;
 using library_RESTful.Models;
-using library_RESTful.Common;
 
 namespace library_RESTful.Tests.HandlersTests
 {
@@ -12,7 +11,7 @@ namespace library_RESTful.Tests.HandlersTests
 		public async Task Handle_ShouldReturnNull_WhenBookDoesNotExist()
 		{
 			// Arrange
-			var context = await Utils.GetTemporaryDbContextAsync();
+			var context = await TestUtils.GetTemporaryDbContextAsync();
 			var handler = new DeleteBookByIdCommandHandler(context);
 			
 			int id = 9999;
@@ -23,6 +22,8 @@ namespace library_RESTful.Tests.HandlersTests
 
 			// Assert
 			result.Should().BeNull();
+
+			await context.Database.EnsureDeletedAsync();
 			context.Dispose();
 		}
 
@@ -31,7 +32,7 @@ namespace library_RESTful.Tests.HandlersTests
 		public async Task Handle_ShouldReturnSuccess_WhenBookDeletedSuccessfully()
 		{
 			// Arrange
-			var context = await Utils.GetTemporaryDbContextAsync();
+			var context = await TestUtils.GetTemporaryDbContextAsync();
 			var handler = new DeleteBookByIdCommandHandler(context);
 			
 			int id = 1;
@@ -42,6 +43,8 @@ namespace library_RESTful.Tests.HandlersTests
 
 			// Assert
 			result.Should().BeOfType(typeof(Book));
+
+			await context.Database.EnsureDeletedAsync();
 			context.Dispose();
 		}
 	}

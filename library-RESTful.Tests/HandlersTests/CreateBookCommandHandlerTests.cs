@@ -12,7 +12,7 @@ namespace library_RESTful.Tests.HandlersTests
 		{
 			// Arrange
 			var command = new CreateBookCommand("Test Title", 2020, "Test Genre", 9999);
-			var context = await Utils.GetTemporaryDbContextAsync();
+			var context = await TestUtils.GetTemporaryDbContextAsync();
 			var handler = new CreateBookCommandHandler(context);
 
 			// Act
@@ -20,6 +20,8 @@ namespace library_RESTful.Tests.HandlersTests
 
 			// Assert
 			result.Should().BeOfType(typeof(BadRequestCommandResult));
+
+			await context.Database.EnsureDeletedAsync();
 			context.Dispose();
 		}
 
@@ -35,7 +37,7 @@ namespace library_RESTful.Tests.HandlersTests
 				AuthorId = 1
 			};
 			var command = new CreateBookCommand(book.Title, book.PublishedYear, book.Genre, book.AuthorId);
-			var context = await Utils.GetTemporaryDbContextAsync();
+			var context = await TestUtils.GetTemporaryDbContextAsync();
 			var handler = new CreateBookCommandHandler(context);
 
 			// Act
@@ -43,6 +45,8 @@ namespace library_RESTful.Tests.HandlersTests
 
 			// Assert
 			result.Should().BeOfType<BadRequestCommandResult>();
+
+			await context.Database.EnsureDeletedAsync();
 			context.Dispose();
 		}
 
@@ -59,7 +63,7 @@ namespace library_RESTful.Tests.HandlersTests
 				AuthorId = 1 
 			};
 			var command = new CreateBookCommand(book.Title, book.PublishedYear, book.Genre, book.AuthorId);
-			var context = await Utils.GetTemporaryDbContextAsync();
+			var context = await TestUtils.GetTemporaryDbContextAsync();
 			var handler = new CreateBookCommandHandler(context);
 
 			// Act
@@ -69,6 +73,8 @@ namespace library_RESTful.Tests.HandlersTests
 			result.Should().BeOfType<SuccessCommandResult>();
 			var successResult = result as SuccessCommandResult;
 			((Book)successResult!.value!).Should().BeEquivalentTo(book, options => options.Excluding(b => b.Id).Excluding(b => b.Author));
+
+			await context.Database.EnsureDeletedAsync();
 			context.Dispose();
 		}
 	}
