@@ -1,0 +1,6 @@
+@library_RESTful_HostAddress = http://localhost:5296
+
+GET {{library_RESTful_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
