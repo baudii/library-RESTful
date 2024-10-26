@@ -55,7 +55,7 @@ namespace library_RESTful.Controllers
 						break;
 					return CreatedAtAction(nameof(GetBooks), new { id = book.Id }, book);
 				case CommandStatus.BadRequest:
-					return BadRequest(new { ErrorMessage = createResult.Message });
+					return BadRequest(createResult.Message);
 			}
 			return StatusCode(StatusCodes.Status500InternalServerError);
 		}
@@ -85,10 +85,16 @@ namespace library_RESTful.Controllers
 			var command = new DeleteBookByIdCommand(id);
 			var commandResult = await _sender.Send(command, _cts.Token);
 
-			if (commandResult.Status == CommandStatus.NotFound)
-				return NotFound();
-
-			return Ok(commandResult.Value);
+			switch (commandResult.Status)
+			{
+				case CommandStatus.Success:
+					return Ok(commandResult.Value);
+				case CommandStatus.NotFound:
+					return NotFound();
+				case CommandStatus.BadRequest:
+					return BadRequest();
+			}
+			return StatusCode(StatusCodes.Status500InternalServerError);
 		}
 	}
 }

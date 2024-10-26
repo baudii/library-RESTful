@@ -5,10 +5,10 @@ EXPOSE 5000
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
-COPY ["library-RESTful.csproj", "./"]
+COPY ["library-RESTful/library-RESTful.csproj", "./"]
 RUN dotnet restore "./library-RESTful.csproj"
 COPY . .
-WORKDIR "/src"
+WORKDIR "/src/library-RESTful"
 RUN dotnet build "./library-RESTful.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
 FROM build AS publish
