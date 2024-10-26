@@ -13,6 +13,7 @@ namespace library_RESTful
 					if (commandResult.Message != null)
 						return new BadRequestObjectResult(commandResult.Message);
 					return new BadRequestResult();
+
 				case CommandStatus.NotFound:
 					if (commandResult.Message != null)
 						return new NotFoundObjectResult(commandResult.Message);

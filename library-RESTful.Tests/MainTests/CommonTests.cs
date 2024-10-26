@@ -7,84 +7,69 @@ namespace library_RESTful.Tests.MainTests
 {
 	public class CommonTests
 	{
-		[Fact]
-		public void ConvertToActionResult_ShouldReturnBadRequestResult_WithStatusAndMessageIsNull()
+		[Theory]
+		[InlineData(CommandStatus.NotFound, null, "someMessage")]
+		[InlineData(CommandStatus.NotFound, 5, "someMessage")]
+		[InlineData(CommandStatus.NotFound)]
+
+		public void ConvertToActionResult_ShouldReturnNotFound_WhenStatusIsNotFound(CommandStatus status, object? value = null, string? message = null)
 		{
 			// Arrange
-			CommandResult commandResult = new CommandResult(CommandStatus.BadRequest, message: null);
+			CommandResult commandResult = new CommandResult(status, value, message);
 
 			// Act
 			var result = commandResult.ConvertToActionResult();
 
 			// Assert
-			result.Should().BeOfType(typeof(BadRequestResult));
+			if (message == null)
+			{
+				result.Should().BeOfType(typeof(NotFoundResult));
+			}
+			else
+			{
+				var notFoundReq = result.Should().BeOfType<NotFoundObjectResult>().Subject;
+				notFoundReq!.Value.Should().Be(message);
+			}
 		}
 
-
-		[Fact]
-		public void ConvertToActionResult_ShouldReturnBadRequestObjectResultWithMessage_WhenMessageIsNotNull()
+		[Theory]
+		[InlineData(CommandStatus.BadRequest, null, "someMessage")]
+		[InlineData(CommandStatus.BadRequest, 5, "someMessage")]
+		[InlineData(CommandStatus.BadRequest)]
+		public void ConvertToActionResult_ShouldReturnNotBadRequest_WhenStatusIsBadRequest(CommandStatus status, object? value = null, string? message = null)
 		{
 			// Arrange
-			var msg = "Some Message";
-			CommandResult commandResult = new CommandResult(CommandStatus.BadRequest, message: msg);
+			CommandResult commandResult = new CommandResult(status, value, message);
 
 			// Act
 			var result = commandResult.ConvertToActionResult();
 
 			// Assert
-			result.Should().BeOfType(typeof(BadRequestObjectResult));
-			var badReq = result as BadRequestObjectResult;
-			badReq!.Value.Should().BeEquivalentTo(msg);
+			if (message == null)
+			{
+				result.Should().BeOfType(typeof(BadRequestResult));
+			}
+			else
+			{
+				var badReq = result.Should().BeOfType<BadRequestObjectResult>().Subject;
+				badReq!.Value.Should().BeEquivalentTo(message);
+			}
 		}
 
-
-		[Fact]
-		public void ConvertToActionResult_ShouldReturnNotFoundResult_WhenMessageIsNull()
+		[Theory]
+		[InlineData(CommandStatus.Success)]
+		[InlineData((CommandStatus)99)]
+		public void ConvertToActionResult_ShouldReturnStatus500_WhenStatusNotBadRequestAndNotNotFound(CommandStatus status, object? value = null, string? message = null)
 		{
 			// Arrange
-			CommandResult commandResult = new CommandResult(CommandStatus.NotFound, message: null);
+			CommandResult commandResult = new CommandResult(status, value, message);
 
 			// Act
 			var result = commandResult.ConvertToActionResult();
 
 			// Assert
-			result.Should().BeOfType(typeof(NotFoundResult));
-		}
-
-		[Fact]
-		public void ConvertToActionResult_ShouldReturnNotFoundObjectResultWithMessage_WhenMessageIsNotNull()
-		{
-			// Arrange
-			var msg = "Some Message";
-			CommandResult commandResult = new CommandResult(CommandStatus.NotFound, message: msg);
-
-			// Act
-			var result = commandResult.ConvertToActionResult();
-
-			// Assert
-			result.Should().BeOfType(typeof(NotFoundObjectResult));
-			var badReq = result as NotFoundObjectResult;
-			badReq!.Value.Should().BeEquivalentTo(msg);
-		}
-
-		[Fact]
-		public void ConvertToActionResult_ShouldReturnStatus500_WhenStatusNotBadRequestAndNotNotFound()
-		{
-			// Arrange
-			CommandResult commandResult1 = new CommandResult(CommandStatus.Success);
-			CommandResult commandResult2 = new CommandResult((CommandStatus)99);
-
-			// Act
-			var result1 = commandResult1.ConvertToActionResult();
-			var result2 = commandResult2.ConvertToActionResult();
-
-			// Assert
-			result1.Should().BeOfType(typeof(StatusCodeResult));
-			var badReq1 = result1 as StatusCodeResult;
-			badReq1!.StatusCode.Should().Be(StatusCodes.Status500InternalServerError); 
-			result2.Should().BeOfType(typeof(StatusCodeResult));
-			var badReq2 = result2 as StatusCodeResult;
-			badReq2!.StatusCode.Should().Be(StatusCodes.Status500InternalServerError);
+			var statusCode = result.Should().BeOfType<StatusCodeResult>().Subject;
+			statusCode!.StatusCode.Should().Be(StatusCodes.Status500InternalServerError); 
 		}
 	}
 }

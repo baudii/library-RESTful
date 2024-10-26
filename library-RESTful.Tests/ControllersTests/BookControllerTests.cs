@@ -25,7 +25,7 @@ namespace library_RESTful.Tests.ControllersTests
 		#region Get.Tests
 
 		[Fact]
-		public async void GetBooks_ReturnsOk_WhenBooksExists()
+		public async Task GetBooks_ReturnsOk_WhenBooksExists()
 		{
 			// Arrange
 			var fakeBooks = new List<Book>
@@ -35,39 +35,38 @@ namespace library_RESTful.Tests.ControllersTests
 			};
 			var bookQuery = new GetBooksQuery();
 			var queryResult = new CommandResult(CommandStatus.Success, fakeBooks);
-			A.CallTo(() =>
-					_sender.Send(A<GetBooksQuery>.Ignored, A<CancellationToken>.Ignored)
-				)!.Returns(queryResult);
+			A.CallTo(() =>_sender.Send(A<GetBooksQuery>.Ignored, A<CancellationToken>.Ignored))!
+				.Returns(queryResult);
 
 			// Act
 			var result = await _booksController.GetBooks();
 
 			// Assert
-			result.Should().BeOfType(typeof(ActionResult<IEnumerable<Book>>));
-			result.Result.Should().BeOfType(typeof(OkObjectResult));
-			var books = result.Result as OkObjectResult;
+			var books = result.Result.Should().BeOfType<OkObjectResult>().Subject;
 			books!.Value.Should().BeEquivalentTo(fakeBooks);
 		}
 
-		[Fact]
-		public async void GetBooks_ReturnsNotFound_WhenBooksDoesNotExist()
+		[Theory]
+		[InlineData(CommandStatus.NotFound)]
+		[InlineData(CommandStatus.BadRequest)]
+		[InlineData((CommandStatus)999)]
+		public async Task GetBooks_ReturnsBadActionResult_WhenStatusNotSuccess(CommandStatus status)
 		{
 			// Arrange
-			IEnumerable<Book>? fakeBooks = null;
-			var queryResult = new CommandResult(CommandStatus.NotFound, value: fakeBooks);
-			A.CallTo(() => 
-					_sender.Send(A<GetBooksQuery>.Ignored, A<CancellationToken>.Ignored)
-				)!.Returns(queryResult);
+			var commandResult = new CommandResult(status, null, null);
+			var expected = commandResult.ConvertToActionResult();
+			A.CallTo(() => _sender.Send(A<GetBooksQuery>.Ignored, A<CancellationToken>.Ignored))
+				.Returns(commandResult);
 
 			// Act
 			var result = await _booksController.GetBooks();
 
 			// Assert
-			result.Result.Should().BeOfType(typeof(NotFoundResult));
+			result.Result.Should().BeOfType(expected.GetType());
 		}
 
 		[Fact]
-		public async void GetBook_ReturnsOkWithBook_WhenBookExists()
+		public async Task GetBook_ReturnsOkWithBook_WhenBookExists()
 		{
 			// Arrange
 			var bookId = 1;
@@ -79,27 +78,29 @@ namespace library_RESTful.Tests.ControllersTests
 			var bookQueryById = new GetBookByIdQuery(bookId);
 			var queryResult = new CommandResult(CommandStatus.Success, value: fakeBook);
 
-			A.CallTo(() => 
-						_sender.Send(A<GetBookByIdQuery>.That.Matches(query => query.Id == bookId), A<CancellationToken>.Ignored)
-					).Returns(queryResult);
+			A.CallTo(() => _sender.Send(A<GetBookByIdQuery>.That.Matches(query => query.Id == bookId), A<CancellationToken>.Ignored))
+				.Returns(queryResult);
 
 			// Act
 			var result = await _booksController.GetBook(bookId);
 
 			// Assert
-			result.Result.Should().BeOfType<OkObjectResult>();
-			var okResult = result.Result as OkObjectResult;
+			var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
 			okResult!.Value.Should().BeEquivalentTo(fakeBook);
 		}
 
-		[Fact]
-		public async void GetBook_ReturnsNotFound_WhenBookDoesNotExists()
+		[Theory]
+		[InlineData(CommandStatus.NotFound)]
+		[InlineData(CommandStatus.NotFound, "Some Msg")]
+		[InlineData(CommandStatus.BadRequest)]
+		[InlineData(CommandStatus.BadRequest, "Some Msg")]
+		[InlineData((CommandStatus)999)]
+		public async Task GetBook_ReturnsBadActionResult_WhenStatusNotSuccess(CommandStatus status, string? message = null)
 		{
 			// Arrange
 			var bookId = 1;
-			Book? fakeBook = null;
-			var bookQueryById = new GetBookByIdQuery(bookId);
-			var queryResult = new CommandResult(CommandStatus.NotFound, value: fakeBook);
+			var queryResult = new CommandResult(status, message: message);
+			var expected = queryResult.ConvertToActionResult();
 
 			A.CallTo(() => _sender.Send(A<GetBookByIdQuery>.That.Matches(query => query.Id == bookId), A<CancellationToken>.Ignored))
 				.Returns(queryResult);
@@ -108,7 +109,9 @@ namespace library_RESTful.Tests.ControllersTests
 			var result = await _booksController.GetBook(bookId);
 
 			// Assert
-			result.Result.Should().BeOfType<NotFoundResult>();
+			result.Result.Should().BeOfType(expected.GetType());
+			if (result.Result is ObjectResult objResult)
+				objResult.Value.Should().BeEquivalentTo(message);
 		}
 
 		#endregion
@@ -116,7 +119,7 @@ namespace library_RESTful.Tests.ControllersTests
 		#region Post.Tests
 
 		[Fact]
-		public async void PostBook_ReturnsCreatedAtActionResult_WhenCreatedBookExists()
+		public async Task PostBook_ReturnsCreatedAtWithBook_WhenSuccessResultWithBook()
 		{
 			// Arrange
 			var fakeBook = new Book
@@ -133,18 +136,23 @@ namespace library_RESTful.Tests.ControllersTests
 			var result = await _booksController.PostBook(command);
 
 			// Assert
-			result.Result.Should().BeOfType(typeof(CreatedAtActionResult));
-			var created = result.Result as CreatedAtActionResult;
-			created!.Value.Should().BeEquivalentTo(fakeBook);
+			var createdResult = result.Result.Should().BeOfType<CreatedAtActionResult>().Subject;
+			createdResult!.Value.Should().BeEquivalentTo(fakeBook);
 		}
 
-		[Fact]
-		public async void PostBook_ReturnsBadRequestObjectResult_WhenCreatedBookAlreadyExists()
+		[Theory]
+		[InlineData(CommandStatus.NotFound)]
+		[InlineData(CommandStatus.BadRequest)]
+		[InlineData(CommandStatus.Success)]
+		[InlineData((CommandStatus)999)]
+		public async Task PostBook_ReturnsBadAction_WhenStatusIsNotSuccessOrValueIsNotBook(CommandStatus status)
 		{
 			// Arrange
 			var errorMessage = "SomeMessage";
-			var fakeResult = new CommandResult(CommandStatus.BadRequest, message: errorMessage);
+			var fakeResult = new CommandResult(status, message: errorMessage);
 			var command = new CreateBookCommand("Test", 2000, "TestGenre", 2);
+			var expected = fakeResult.ConvertToActionResult();
+
 			A.CallTo(() => _sender.Send(command, A<CancellationToken>.Ignored))
 				.Returns(fakeResult);
 
@@ -152,40 +160,9 @@ namespace library_RESTful.Tests.ControllersTests
 			var result = await _booksController.PostBook(command);
 
 			// Assert
-			result.Result.Should().BeOfType(typeof(BadRequestObjectResult));
-			var badRequest = result.Result as BadRequestObjectResult;
-			string msg = badRequest!.Value!.ToString()!;
-			msg.Should().BeEquivalentTo(errorMessage);
-		}
-
-		[Fact]
-		public async void PostBook_Returns500_WhenGivenResultOrValueNull()
-		{
-			// Arrange
-			CommandResult fakeResult = new CommandResult(CommandStatus.Success, value: null);
-
-			var command1 = new CreateBookCommand("Test1", 2000, "TestGenre1", 2);
-			var command2 = new CreateBookCommand("Test2", 2001, "TestGenre2", 3);
-
-			A.CallTo(() => _sender.Send(command2, A<CancellationToken>.Ignored))!
-				.Returns(fakeResult);
-
-			// Act
-			var task1 = _booksController.PostBook(command1);
-			var task2 = _booksController.PostBook(command2);
-
-			await Task.WhenAll(task1, task2);
-
-			var result1 = task1.Result;
-			var result2 = task2.Result;
-
-			// Assert
-			result1.Result.Should().BeOfType(typeof(StatusCodeResult));
-			result2.Result.Should().BeOfType(typeof(StatusCodeResult));
-			var statusCode1 = result1.Result as StatusCodeResult;
-			var statusCode2 = result2.Result as StatusCodeResult;
-			statusCode1!.StatusCode.Should().Be(500);
-			statusCode2!.StatusCode.Should().Be(500);
+			result.Result.Should().BeOfType(expected.GetType());
+			if (result.Result is ObjectResult objResult)
+				objResult.Value.Should().BeEquivalentTo(errorMessage);
 		}
 
 		#endregion
@@ -193,7 +170,7 @@ namespace library_RESTful.Tests.ControllersTests
 		#region Put.Tests
 
 		[Fact]
-		public async void PutBook_ReturnsNoContentResult_WhenResultStatusSuccess()
+		public async Task PutBook_ReturnsNoContentResult_WhenResultStatusSuccess()
 		{
 			// Arrange
 			var resultStatus = new CommandResult(CommandStatus.Success);
@@ -208,12 +185,17 @@ namespace library_RESTful.Tests.ControllersTests
 			result.Should().BeOfType(typeof(NoContentResult));
 		}
 
-		[Fact]
-		public async void PutBook_ReturnsNotFoundResult_WhenResultStatusNotFound()
+		[Theory]
+		[InlineData(CommandStatus.NotFound)]
+		[InlineData(CommandStatus.BadRequest)]
+		[InlineData((CommandStatus)999)]
+		public async Task PutBook_ReturnsBadResult_WhenBadCommandStatus(CommandStatus status)
 		{
 			// Arrange
-			var resultStatus = new CommandResult(CommandStatus.NotFound);
+			var message = "Test";
+			var resultStatus = new CommandResult(status, message: message);
 			var command = new UpdateBookCommand(1, "Test", 2000, "TestGenre", 2);
+			var expected = resultStatus.ConvertToActionResult();
 			A.CallTo(() => _sender.Send(command, A<CancellationToken>.Ignored))
 				.Returns(resultStatus);
 
@@ -221,49 +203,17 @@ namespace library_RESTful.Tests.ControllersTests
 			var result = await _booksController.PutBook(command);
 
 			// Assert
-			result.Should().BeOfType(typeof(NotFoundResult));
-		}
-
-		[Fact]
-		public async void PutBook_ReturnsBadRequestResult_WhenResultStatusBadRequest()
-		{
-			// Arrange
-			CommandResult resultStatus = new CommandResult(CommandStatus.BadRequest);
-			var command = new UpdateBookCommand(1, "Test", 2000, "TestGenre", 2);
-			A.CallTo(() => _sender.Send(command, A<CancellationToken>.Ignored))
-				.Returns(resultStatus);
-
-			// Act
-			var result = await _booksController.PutBook(command);
-
-			// Assert
-			result.Should().BeOfType(typeof(BadRequestResult));
-		}
-
-		[Fact]
-		public async void PutBook_ReturnsStatus500_WhenBadStatus()
-		{
-			// Arrange
-			CommandResult resultStatus = new CommandResult((CommandStatus)999);
-			var command = new UpdateBookCommand(1, "Test", 2000, "TestGenre", 2);
-			A.CallTo(() => _sender.Send(command, A<CancellationToken>.Ignored))!
-				.Returns(resultStatus);
-
-			// Act
-			var result = await _booksController.PutBook(command);
-
-			// Assert
-			result.Should().BeOfType(typeof(StatusCodeResult));
-			var statusCode = result as StatusCodeResult;
-			statusCode!.StatusCode.Should().Be(500);
+			result.Should().BeOfType(expected.GetType());
+			if (result is ObjectResult objResult)
+				objResult.Value.Should().BeEquivalentTo(message);
 		}
 
 		#endregion
 
 		#region Delete.Tests
-
+		 
 		[Fact]
-		public async void DeleteBook_ReturnsOkWithBook_WhenBookWasFound()
+		public async Task DeleteBook_ReturnsOkWithBook_WhenCommandStatusSuccess()
 		{
 			// Arrange
 			int fakeId = 4;
@@ -274,11 +224,9 @@ namespace library_RESTful.Tests.ControllersTests
 			};
 
 			var fakeResult = new CommandResult(CommandStatus.Success, value: fakeBook);
-			A.CallTo(() => 
-					_sender.Send(A<DeleteBookByIdCommand>.That.Matches(
-							command => command.Id == fakeId
-						), A<CancellationToken>.Ignored)
-				).Returns(fakeResult);
+			A.CallTo(() => _sender.Send(A<DeleteBookByIdCommand>
+				.That.Matches(command => command.Id == fakeId), A<CancellationToken>.Ignored))
+				.Returns(fakeResult);
 
 			// Act
 			var result = await _booksController.DeleteBook(fakeId);
@@ -289,23 +237,29 @@ namespace library_RESTful.Tests.ControllersTests
 			okObject!.Value.Should().Be(fakeBook);
 		}
 
-		[Fact]
-		public async void DeleteBook_ReturnsNotFoundResult_WhenBookWasNotFound()
+
+		[Theory]
+		[InlineData(CommandStatus.NotFound)]
+		[InlineData(CommandStatus.BadRequest)]
+		[InlineData((CommandStatus)999)]
+		public async Task DeleteBook_ReturnsBadResult_WhenStatusNotSuccess(CommandStatus status)
 		{
 			// Arrange
 			int fakeId = 4;
-			var fakeResult = new CommandResult(CommandStatus.NotFound, value: null);
-			A.CallTo(() =>
-					_sender.Send(A<DeleteBookByIdCommand>.That.Matches(
-							command => command.Id == fakeId
-						), A<CancellationToken>.Ignored)
-				).Returns(fakeResult);
+			var message = "Test";
+			var fakeResult = new CommandResult(status, message: message);
+			var expected = fakeResult.ConvertToActionResult();
+			A.CallTo(() => _sender.Send(A<DeleteBookByIdCommand>
+				.That.Matches(command => command.Id == fakeId), A<CancellationToken>.Ignored))
+				.Returns(fakeResult);
 
 			// Act
 			var result = await _booksController.DeleteBook(fakeId);
 
 			// Assert
-			result.Result.Should().BeOfType(typeof(NotFoundResult));
+			result.Result.Should().BeOfType(expected.GetType());
+			if (result.Result is ObjectResult objResult) 
+				objResult.Value.Should().BeEquivalentTo(message);
 		}
 
 		#endregion

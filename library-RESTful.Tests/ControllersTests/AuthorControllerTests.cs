@@ -33,8 +33,7 @@ namespace library_RESTful.Tests.ControllersTests
 				new Author { Id = 3, FullName = "Test Name 3", Birthday = DateOnly.MinValue }
 			};
 			var getAuthorsResult = new CommandResult(CommandStatus.Success, authors);
-			A.CallTo(() =>
-					_sender.Send(A<GetAuthorsQuery>.Ignored, A<CancellationToken>.Ignored)
+			A.CallTo(() => _sender.Send(A<GetAuthorsQuery>.Ignored, A<CancellationToken>.Ignored)
 				).Returns(getAuthorsResult);
 
 			// Act
@@ -46,20 +45,23 @@ namespace library_RESTful.Tests.ControllersTests
 			okObjResult!.Value.Should().BeEquivalentTo(authors);
 		}
 
-		[Fact]
-		public async void GetAuthors_ReturnsNotFound_WhenAuthorsDoesNotExists()
+		[Theory]
+		[InlineData(CommandStatus.NotFound)]
+		[InlineData(CommandStatus.BadRequest)]
+		[InlineData((CommandStatus)999)]
+		public async void GetAuthors_ReturnsCorrectActionResult_WhenResultStatusIsNotSuccess(CommandStatus status)
 		{
 			// Arrange
-			var getAuthorsResult = new CommandResult(CommandStatus.NotFound);
-			A.CallTo(() =>
-					_sender.Send(A<GetAuthorsQuery>.Ignored, A<CancellationToken>.Ignored)
-				)!.Returns(getAuthorsResult);
+			var getAuthorsResult = new CommandResult(status);
+			ActionResult? expected = getAuthorsResult.ConvertToActionResult();
+			A.CallTo(() => _sender.Send(A<GetAuthorsQuery>.Ignored, A<CancellationToken>.Ignored))!
+				.Returns(getAuthorsResult);
 
 			// Act
 			var result = await _authorsController.GetAuthors();
 
 			// Assert
-			result.Result.Should().BeOfType(typeof(NotFoundResult));
+			result.Result.Should().BeOfType(expected.GetType());
 		}
 	}
 }
