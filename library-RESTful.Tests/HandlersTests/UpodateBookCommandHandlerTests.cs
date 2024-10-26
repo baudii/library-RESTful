@@ -1,6 +1,5 @@
 ﻿using FluentAssertions;
 using library_RESTful.CQRS;
-using library_RESTful.Common;
 using Microsoft.EntityFrameworkCore;
 
 namespace library_RESTful.Tests.HandlersTests
@@ -21,7 +20,7 @@ namespace library_RESTful.Tests.HandlersTests
 			var result = await handler.Handle(command, CancellationToken.None);
 
 			// Assert
-			result.Should().BeOfType(typeof(NotFoundCommandResult));
+			result.Status.Should().Be(CommandStatus.NotFound);
 
 			await context.Database.EnsureDeletedAsync();
 			context.Dispose();
@@ -42,7 +41,7 @@ namespace library_RESTful.Tests.HandlersTests
 			var result = await handler.Handle(command, CancellationToken.None);
 
 			// Assert
-			result.Should().BeOfType<BadRequestCommandResult>();
+			result.Status.Should().Be(CommandStatus.BadRequest);
 
 			await context.Database.EnsureDeletedAsync();
 			context.Dispose();
@@ -63,7 +62,7 @@ namespace library_RESTful.Tests.HandlersTests
 			var result = await handler.Handle(command, CancellationToken.None);
 
 			// Assert
-			result.Should().BeOfType<SuccessCommandResult>();
+			result.Status.Should().Be(CommandStatus.Success);
 
 			var updatedBook = await context.Books.FindAsync(existingBook.Id);
 			updatedBook.Should().NotBeNull();

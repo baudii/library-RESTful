@@ -16,6 +16,7 @@ namespace library_RESTful.CQRS
 
 		public async Task<IEnumerable<Book>> Handle(GetBooksQuery request, CancellationToken cancellationToken)
 		{
+			// Обработчик получения всех книг из БД
 			return await _context.Books.ToListAsync(cancellationToken);
 		}
 	}

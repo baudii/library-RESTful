@@ -5,7 +5,6 @@ using library_RESTful.Models;
 using library_RESTful.CQRS;
 using FluentAssertions;
 using Microsoft.AspNetCore.Mvc;
-using library_RESTful.Common;
 
 namespace library_RESTful.Tests.ControllersTests
 {
@@ -121,7 +120,7 @@ namespace library_RESTful.Tests.ControllersTests
 				Id = 1,
 				Title = "Test"
 			};
-			var fakeResult = new SuccessCommandResult(fakeBook);
+			var fakeResult = new CommandResult(CommandStatus.Success, value: fakeBook);
 			var command = new CreateBookCommand("Test", 2000, "TestGenre", 2);
 			A.CallTo(() => _sender.Send(command, A<CancellationToken>.Ignored))
 				.Returns(fakeResult);
@@ -140,7 +139,7 @@ namespace library_RESTful.Tests.ControllersTests
 		{
 			// Arrange
 			var errorMessage = "SomeMessage";
-			var fakeResult = new BadRequestCommandResult(errorMessage);
+			var fakeResult = new CommandResult(CommandStatus.BadRequest, message: errorMessage);
 			var command = new CreateBookCommand("Test", 2000, "TestGenre", 2);
 			A.CallTo(() => _sender.Send(command, A<CancellationToken>.Ignored))
 				.Returns(fakeResult);
@@ -151,44 +150,30 @@ namespace library_RESTful.Tests.ControllersTests
 			// Assert
 			result.Result.Should().BeOfType(typeof(BadRequestObjectResult));
 			var badRequest = result.Result as BadRequestObjectResult;
-			string msg = (string)Utils.GetAnonymousProperty(badRequest!.Value!, "ErrorMessage")!;
+			string msg = (string)TestUtils.GetAnonymousProperty(badRequest!.Value!, "ErrorMessage")!;
 			msg.Should().BeEquivalentTo(errorMessage);
 		}
 
 		[Fact]
-		public async void PostBook_Returns500_WhenResultIsNull()
+		public async void PostBook_Returns500_WhenGivenResultOrValueNull()
 		{
 			// Arrange
-			CommandResult? fakeResult = null;
-			var command = new CreateBookCommand("Test", 2000, "TestGenre", 2);
-			A.CallTo(() => _sender.Send(command, A<CancellationToken>.Ignored))!
+			CommandResult fakeResult = new CommandResult(CommandStatus.Success, value: null);
+
+			var command1 = new CreateBookCommand("Test1", 2000, "TestGenre1", 2);
+			var command2 = new CreateBookCommand("Test2", 2001, "TestGenre2", 3);
+
+			A.CallTo(() => _sender.Send(command2, A<CancellationToken>.Ignored))!
 				.Returns(fakeResult);
 
 			// Act
-			var result = await _booksController.PostBook(command);
+			var task1 = _booksController.PostBook(command1);
+			var task2 = _booksController.PostBook(command2);
 
-			// Assert
-			result.Result.Should().BeOfType(typeof(StatusCodeResult));
-			var statusCode = result.Result as StatusCodeResult;
-			statusCode!.StatusCode.Should().Be(500);
-		}
+			await Task.WhenAll(task1, task2);
 
-		[Fact]
-		public async void PostBook_Returns500_WhenResultValueIsNull()
-		{
-			// Arrange
-			CommandResult? fakeResult1 = new SuccessCommandResult(null);
-			CommandResult? fakeResult2 = new BadRequestCommandResult(null);
-			var command1 = new CreateBookCommand("Test1", 2001, "TestGenre1", 2);
-			var command2 = new CreateBookCommand("Test2", 2002, "TestGenre2", 3);
-			A.CallTo(() => _sender.Send(command1, A<CancellationToken>.Ignored))!
-				.Returns(fakeResult1);			
-			A.CallTo(() => _sender.Send(command2, A<CancellationToken>.Ignored))!
-				.Returns(fakeResult1);
-
-			// Act
-			var result1 = await _booksController.PostBook(command1);
-			var result2 = await _booksController.PostBook(command2);
+			var result1 = task1.Result;
+			var result2 = task2.Result;
 
 			// Assert
 			result1.Result.Should().BeOfType(typeof(StatusCodeResult));
@@ -207,7 +192,7 @@ namespace library_RESTful.Tests.ControllersTests
 		public async void PutBook_ReturnsNoContentResult_WhenResultStatusSuccess()
 		{
 			// Arrange
-			var resultStatus = new SuccessCommandResult();
+			var resultStatus = new CommandResult(CommandStatus.Success);
 			var command = new UpdateBookCommand(1, "Test", 2000, "TestGenre", 2);
 			A.CallTo(() => _sender.Send(command, A<CancellationToken>.Ignored))
 				.Returns(resultStatus);
@@ -223,7 +208,7 @@ namespace library_RESTful.Tests.ControllersTests
 		public async void PutBook_ReturnsNotFoundResult_WhenResultStatusNotFound()
 		{
 			// Arrange
-			var resultStatus = new NotFoundCommandResult();
+			var resultStatus = new CommandResult(CommandStatus.NotFound);
 			var command = new UpdateBookCommand(1, "Test", 2000, "TestGenre", 2);
 			A.CallTo(() => _sender.Send(command, A<CancellationToken>.Ignored))
 				.Returns(resultStatus);
@@ -239,7 +224,7 @@ namespace library_RESTful.Tests.ControllersTests
 		public async void PutBook_ReturnsBadRequestResult_WhenResultStatusBadRequest()
 		{
 			// Arrange
-			var resultStatus = new BadRequestCommandResult();
+			CommandResult resultStatus = new CommandResult(CommandStatus.BadRequest);
 			var command = new UpdateBookCommand(1, "Test", 2000, "TestGenre", 2);
 			A.CallTo(() => _sender.Send(command, A<CancellationToken>.Ignored))
 				.Returns(resultStatus);
@@ -252,12 +237,12 @@ namespace library_RESTful.Tests.ControllersTests
 		}
 
 		[Fact]
-		public async void PutBook_ReturnsStatus500_WhenResultIsDefault()
+		public async void PutBook_ReturnsStatus500_WhenBadStatus()
 		{
 			// Arrange
-			CommandResult resultStatus = null;
+			CommandResult resultStatus = new CommandResult((CommandStatus)999);
 			var command = new UpdateBookCommand(1, "Test", 2000, "TestGenre", 2);
-			A.CallTo(() => _sender.Send(command, A<CancellationToken>.Ignored))
+			A.CallTo(() => _sender.Send(command, A<CancellationToken>.Ignored))!
 				.Returns(resultStatus);
 
 			// Act
@@ -283,11 +268,13 @@ namespace library_RESTful.Tests.ControllersTests
 				Id = 7,
 				Title = "Test_Title"
 			};
+
+			var fakeResult = new CommandResult(CommandStatus.Success, value: fakeBook);
 			A.CallTo(() => 
 					_sender.Send(A<DeleteBookByIdCommand>.That.Matches(
 							command => command.Id == fakeId
 						), A<CancellationToken>.Ignored)
-				).Returns(fakeBook);
+				).Returns(fakeResult);
 
 			// Act
 			var result = await _booksController.DeleteBook(fakeId);
@@ -303,12 +290,12 @@ namespace library_RESTful.Tests.ControllersTests
 		{
 			// Arrange
 			int fakeId = 4;
-			Book? fakeBook = null;
+			var fakeResult = new CommandResult(CommandStatus.NotFound, value: null);
 			A.CallTo(() =>
 					_sender.Send(A<DeleteBookByIdCommand>.That.Matches(
 							command => command.Id == fakeId
 						), A<CancellationToken>.Ignored)
-				).Returns(fakeBook);
+				).Returns(fakeResult);
 
 			// Act
 			var result = await _booksController.DeleteBook(fakeId);

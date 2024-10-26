@@ -1,10 +1,9 @@
-﻿using library_RESTful.Common;
-using MediatR;
+﻿using MediatR;
 using System.ComponentModel.DataAnnotations;
 
 namespace library_RESTful.CQRS
 {
-	public record CreateBookCommand(
+    public record CreateBookCommand(
 		[Required(ErrorMessage = "Title is required")]
 		[MaxLength(50, ErrorMessage = "Title can't be longer than 50 characters")]
 		string Title,
@@ -12,7 +11,7 @@ namespace library_RESTful.CQRS
 		int PublishedYear,
 		[Required(ErrorMessage = "Genre is required")]
 		string Genre,
-		[Range(0, int.MaxValue, ErrorMessage = "AuthorId must be non negative")]
+		[Range(1, int.MaxValue, ErrorMessage = "AuthorId must be positive integer")]
 		int AuthorId
 	) : IRequest<CommandResult>;
 }

@@ -59,5 +59,13 @@ namespace library_RESTful.Tests
 				Birthday = new DateOnly(1999, 12, 12)
 			};
 		}
+
+		public static object? GetAnonymousProperty(this object obj, string propName)
+		{
+			var type = obj.GetType();
+			var prop = type.GetProperty(propName);
+			object? val = prop?.GetValue(obj);
+			return val;
+		}
 	}
 }

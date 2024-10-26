@@ -1,12 +1,11 @@
 using library_RESTful.Models;
 using library_RESTful.CQRS;
-using library_RESTful.Common;
 using Microsoft.AspNetCore.Mvc;
 using MediatR;
 
 namespace library_RESTful.Controllers
 {
-	[ApiController]
+    [ApiController]
 	[Route("api/[controller]")]
 	public class BooksController : ControllerBase
 	{
@@ -47,40 +46,33 @@ namespace library_RESTful.Controllers
 		[HttpPost]
 		public async Task<ActionResult<Book>> PostBook(CreateBookCommand command)
 		{
-			CommandResult createResult = await _sender.Send(command, _cts.Token);
-			
-			try
+			var createResult = await _sender.Send(command, _cts.Token);
+
+			switch (createResult.Status)
 			{
-				switch (createResult)
-				{
-					case SuccessCommandResult:
-						var book = (Book)createResult.value!;
-						return CreatedAtAction(nameof(GetBooks), new { id = book.Id }, book);
-					case BadRequestCommandResult:
-						var message = (string)createResult.value!;
-						return BadRequest(new { ErrorMessage = message });
-					default:
-						throw new Exception();
-				}
+				case CommandStatus.Success:
+					if (createResult.Value is not Book book)
+						break;
+					return CreatedAtAction(nameof(GetBooks), new { id = book.Id }, book);
+				case CommandStatus.BadRequest:
+					return BadRequest(new { ErrorMessage = createResult.Message });
 			}
-			catch (Exception)
-			{
-				return StatusCode(StatusCodes.Status500InternalServerError);
-			}
+			return StatusCode(StatusCodes.Status500InternalServerError);
 		}
 
 		// PUT api/books/{id}
 		[HttpPut]
 		public async Task<ActionResult> PutBook(UpdateBookCommand command)
 		{
-			var resultStatus = await _sender.Send(command, _cts.Token);
-			switch (resultStatus)
+			var putResult = await _sender.Send(command, _cts.Token);
+
+			switch (putResult.Status)
 			{
-				case SuccessCommandResult:
+				case CommandStatus.Success:
 					return NoContent();
-				case NotFoundCommandResult:
+				case CommandStatus.NotFound:
 					return NotFound();
-				case BadRequestCommandResult:
+				case CommandStatus.BadRequest:
 					return BadRequest();
 			}
 			return StatusCode(StatusCodes.Status500InternalServerError);
@@ -91,11 +83,12 @@ namespace library_RESTful.Controllers
 		public async Task<ActionResult<Book>> DeleteBook(int id)
 		{
 			var command = new DeleteBookByIdCommand(id);
-			var book = await _sender.Send(command, _cts.Token);
-			if (book == null)
+			var commandResult = await _sender.Send(command, _cts.Token);
+
+			if (commandResult.Status == CommandStatus.NotFound)
 				return NotFound();
 
-			return Ok(book);
+			return Ok(commandResult.Value);
 		}
 	}
 }

@@ -15,6 +15,7 @@ namespace library_RESTful.CQRS
 
 		public async Task<Book?> Handle(GetBookByIdQuery request, CancellationToken cancellationToken)
 		{
+			// Обработчик получения книги с указанным Id
 			return await _context.Books.FindAsync(request.Id, cancellationToken);
 		}
 	}

@@ -1,5 +1,4 @@
-﻿using library_RESTful.Common;
-using MediatR;
+﻿using MediatR;
 using System.ComponentModel.DataAnnotations;
 
 namespace library_RESTful.CQRS
@@ -7,7 +6,7 @@ namespace library_RESTful.CQRS
 
 	public record UpdateBookCommand(
 		[Required(ErrorMessage = "Id is required")]
-		[Range(1, int.MaxValue, ErrorMessage = "Id must be a positive integer")]
+		[Range(1, int.MaxValue, ErrorMessage = "Id must be positive integer")]
 		int Id,
 		[Required(ErrorMessage = "Title is required")]
 		[MaxLength(50, ErrorMessage = "Title can't be longer than 50 characters")]

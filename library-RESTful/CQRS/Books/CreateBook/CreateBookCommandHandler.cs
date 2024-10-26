@@ -1,12 +1,11 @@
 ﻿using library_RESTful.Data;
 using library_RESTful.Models;
-using library_RESTful.Common;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
 namespace library_RESTful.CQRS
 {
-	public class CreateBookCommandHandler : IRequestHandler<CreateBookCommand, CommandResult>
+    public class CreateBookCommandHandler : IRequestHandler<CreateBookCommand, CommandResult>
 	{
 		private readonly LibraryDbContext _context;
 		public CreateBookCommandHandler(LibraryDbContext context)
@@ -16,11 +15,18 @@ namespace library_RESTful.CQRS
 
 		public async Task<CommandResult> Handle(CreateBookCommand request, CancellationToken cancellationToken)
 		{
+			// Обработчик создания книг
 			var author = await _context.Authors.FindAsync(request.AuthorId, cancellationToken);
 
 			if (author == null)
-				return new BadRequestCommandResult($"Author with id={request.AuthorId} doesn't exist");
+			{
+				// Предполагаем, что автор существует и корректно указан, иначе возвращаем BadRequest
+				var result = new CommandResult(CommandStatus.BadRequest, message: $"Author with id={request.AuthorId} doesn't exist");
+				return result;
+			}
 
+
+			// Проверяем существует ли книга с такими данными
 			var bookExists = await _context.Books.AnyAsync(b =>
 				b.Title == request.Title &&
 				b.Genre == request.Genre &&
@@ -29,8 +35,13 @@ namespace library_RESTful.CQRS
 			);
 
 			if (bookExists)
-				return new BadRequestCommandResult($"Identical book already exists");
+			{
+				// Если книга с такими данными уже существует, возвращаем BadReqyest
+				var result = new CommandResult(CommandStatus.BadRequest, message: $"Identical book already exists");
+				return result;
+			}
 
+			// Создаем экземпляр книги
 			var book = new Book
 			{
 				Title = request.Title,
@@ -38,12 +49,11 @@ namespace library_RESTful.CQRS
 				PublishedYear = request.PublishedYear,
 				AuthorId = author.Id
 			};
-
 			
+			// Добавляем в БД и возвращаем Success
 			await _context.Books.AddAsync(book, cancellationToken);
 			await _context.SaveChangesAsync(cancellationToken);
-
-			return new SuccessCommandResult(book);
+			return new CommandResult(CommandStatus.Success, value: book);
 		}
 	}
 }

@@ -8,7 +8,7 @@ namespace library_RESTful.Tests.HandlersTests
 	{
 
 		[Fact]
-		public async Task Handle_ShouldReturnNull_WhenBookDoesNotExist()
+		public async Task Handle_ShouldReturnCommandResultNotFound_WhenBookDoesNotExist()
 		{
 			// Arrange
 			var context = await TestUtils.GetTemporaryDbContextAsync();
@@ -18,10 +18,10 @@ namespace library_RESTful.Tests.HandlersTests
 			var command = new DeleteBookByIdCommand(id);
 
 			// Act
-			var result = await handler.Handle(command, CancellationToken.None);
+			var commandResult = await handler.Handle(command, CancellationToken.None);
 
 			// Assert
-			result.Should().BeNull();
+			commandResult.Status.Should().Be(CommandStatus.NotFound);
 
 			await context.Database.EnsureDeletedAsync();
 			context.Dispose();
@@ -39,10 +39,11 @@ namespace library_RESTful.Tests.HandlersTests
 			var command = new DeleteBookByIdCommand(id);
 
 			// Act
-			var result = await handler.Handle(command, CancellationToken.None);
+			var commandResult = await handler.Handle(command, CancellationToken.None);
 
 			// Assert
-			result.Should().BeOfType(typeof(Book));
+			commandResult.Status.Should().Be(CommandStatus.Success);
+			commandResult.Value.Should().BeOfType(typeof(Book));
 
 			await context.Database.EnsureDeletedAsync();
 			context.Dispose();

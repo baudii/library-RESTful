@@ -15,6 +15,7 @@ namespace library_RESTful.CQRS.Authors.GetAuthors
 
 		public async Task<IEnumerable<Author>> Handle(GetAuthorsQuery request, CancellationToken cancellationToken)
 		{
+			// Обработчик получения всех авторов из БД
 			return await _context.Authors.ToListAsync(cancellationToken);
 		}
 	}

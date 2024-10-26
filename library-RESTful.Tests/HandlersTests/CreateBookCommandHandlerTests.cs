@@ -1,7 +1,6 @@
 ﻿using FluentAssertions;
 using library_RESTful.CQRS;
 using library_RESTful.Models;
-using library_RESTful.Common;
 
 namespace library_RESTful.Tests.HandlersTests
 {
@@ -19,7 +18,8 @@ namespace library_RESTful.Tests.HandlersTests
 			var result = await handler.Handle(command, CancellationToken.None);
 
 			// Assert
-			result.Should().BeOfType(typeof(BadRequestCommandResult));
+			result.Status.Should().Be(CommandStatus.BadRequest);
+			result.Message.Should().BeOfType(typeof(string));
 
 			await context.Database.EnsureDeletedAsync();
 			context.Dispose();
@@ -44,7 +44,8 @@ namespace library_RESTful.Tests.HandlersTests
 			var result = await handler.Handle(command, CancellationToken.None);
 
 			// Assert
-			result.Should().BeOfType<BadRequestCommandResult>();
+			result.Status.Should().Be(CommandStatus.BadRequest);
+			result.Message.Should().BeOfType(typeof(string));
 
 			await context.Database.EnsureDeletedAsync();
 			context.Dispose();
@@ -70,9 +71,9 @@ namespace library_RESTful.Tests.HandlersTests
 			var result = await handler.Handle(command, CancellationToken.None);
 
 			// Assert
-			result.Should().BeOfType<SuccessCommandResult>();
-			var successResult = result as SuccessCommandResult;
-			((Book)successResult!.value!).Should().BeEquivalentTo(book, options => options.Excluding(b => b.Id).Excluding(b => b.Author));
+			result.Status.Should().Be(CommandStatus.Success);
+			result.Value.Should().BeOfType(typeof(Book));
+			result.Value.Should().BeEquivalentTo(book, options => options.Excluding(b => b.Id).Excluding(b => b.Author));
 
 			await context.Database.EnsureDeletedAsync();
 			context.Dispose();
