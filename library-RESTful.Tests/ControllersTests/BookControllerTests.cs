@@ -34,9 +34,10 @@ namespace library_RESTful.Tests.ControllersTests
 				new Book { Id = 2, Title = "Test Book 2" }
 			};
 			var bookQuery = new GetBooksQuery();
+			var queryResult = new CommandResult(CommandStatus.Success, fakeBooks);
 			A.CallTo(() =>
 					_sender.Send(A<GetBooksQuery>.Ignored, A<CancellationToken>.Ignored)
-				)!.Returns(fakeBooks);
+				)!.Returns(queryResult);
 
 			// Act
 			var result = await _booksController.GetBooks();
@@ -53,9 +54,10 @@ namespace library_RESTful.Tests.ControllersTests
 		{
 			// Arrange
 			IEnumerable<Book>? fakeBooks = null;
+			var queryResult = new CommandResult(CommandStatus.NotFound, value: fakeBooks);
 			A.CallTo(() => 
 					_sender.Send(A<GetBooksQuery>.Ignored, A<CancellationToken>.Ignored)
-				)!.Returns(fakeBooks);
+				)!.Returns(queryResult);
 
 			// Act
 			var result = await _booksController.GetBooks();
@@ -75,10 +77,11 @@ namespace library_RESTful.Tests.ControllersTests
 				Title = "Test"
 			};
 			var bookQueryById = new GetBookByIdQuery(bookId);
+			var queryResult = new CommandResult(CommandStatus.Success, value: fakeBook);
 
 			A.CallTo(() => 
 						_sender.Send(A<GetBookByIdQuery>.That.Matches(query => query.Id == bookId), A<CancellationToken>.Ignored)
-					).Returns(fakeBook);
+					).Returns(queryResult);
 
 			// Act
 			var result = await _booksController.GetBook(bookId);
@@ -96,9 +99,10 @@ namespace library_RESTful.Tests.ControllersTests
 			var bookId = 1;
 			Book? fakeBook = null;
 			var bookQueryById = new GetBookByIdQuery(bookId);
+			var queryResult = new CommandResult(CommandStatus.NotFound, value: fakeBook);
 
 			A.CallTo(() => _sender.Send(A<GetBookByIdQuery>.That.Matches(query => query.Id == bookId), A<CancellationToken>.Ignored))
-				.Returns(fakeBook);
+				.Returns(queryResult);
 
 			// Act
 			var result = await _booksController.GetBook(bookId);
@@ -150,7 +154,7 @@ namespace library_RESTful.Tests.ControllersTests
 			// Assert
 			result.Result.Should().BeOfType(typeof(BadRequestObjectResult));
 			var badRequest = result.Result as BadRequestObjectResult;
-			string msg = (string)TestUtils.GetAnonymousProperty(badRequest!.Value!, "ErrorMessage")!;
+			string msg = badRequest!.Value!.ToString()!;
 			msg.Should().BeEquivalentTo(errorMessage);
 		}
 

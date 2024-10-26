@@ -23,9 +23,10 @@ namespace library_RESTful.Controllers
 		public async Task<ActionResult<IEnumerable<Author>>> GetAuthors()
 		{
 			var result = await _sender.Send(new GetAuthorsQuery(), _cts.Token);
-			if (result == null)
-				return NotFound();
-			return Ok(result);
+			if (result.Status == CommandStatus.Success)
+				return Ok(result.Value);
+
+			return result.ConvertToActionResult();
 		}
 	}
 }

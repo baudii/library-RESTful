@@ -32,9 +32,10 @@ namespace library_RESTful.Tests.ControllersTests
 				new Author { Id = 2, FullName = "Test Name 2", Birthday = DateOnly.MinValue },
 				new Author { Id = 3, FullName = "Test Name 3", Birthday = DateOnly.MinValue }
 			};
+			var getAuthorsResult = new CommandResult(CommandStatus.Success, authors);
 			A.CallTo(() =>
 					_sender.Send(A<GetAuthorsQuery>.Ignored, A<CancellationToken>.Ignored)
-				).Returns(authors);
+				).Returns(getAuthorsResult);
 
 			// Act
 			var result = await _authorsController.GetAuthors();
@@ -49,10 +50,10 @@ namespace library_RESTful.Tests.ControllersTests
 		public async void GetAuthors_ReturnsNotFound_WhenAuthorsDoesNotExists()
 		{
 			// Arrange
-			IEnumerable<Author>? authors = null;
+			var getAuthorsResult = new CommandResult(CommandStatus.NotFound);
 			A.CallTo(() =>
 					_sender.Send(A<GetAuthorsQuery>.Ignored, A<CancellationToken>.Ignored)
-				)!.Returns(authors);
+				)!.Returns(getAuthorsResult);
 
 			// Act
 			var result = await _authorsController.GetAuthors();

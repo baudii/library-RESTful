@@ -22,24 +22,24 @@ namespace library_RESTful.Controllers
 		[HttpGet]
 		public async Task<ActionResult<IEnumerable<Book>>> GetBooks()
 		{
-			var result = await _sender.Send(new GetBooksQuery());
+			var getBooksResult = await _sender.Send(new GetBooksQuery());
 			
-			if (result == null)
-				return NotFound();
+			if (getBooksResult.Status == CommandStatus.Success)
+				return Ok(getBooksResult.Value);
 
-			return Ok(result);
+			return getBooksResult.ConvertToActionResult();
 		}
 
 		// GET /api/books/{id}
 		[HttpGet("{id:int}")]
 		public async Task<ActionResult<Book>> GetBook(int id)
 		{
-			var book = await _sender.Send(new GetBookByIdQuery(id), _cts.Token);
+			var getBookByIdResult = await _sender.Send(new GetBookByIdQuery(id), _cts.Token);
 
-			if (book == null)
-				return NotFound();
+			if (getBookByIdResult.Status == CommandStatus.Success)
+				return Ok(getBookByIdResult.Value);
 
-			return Ok(book);
+			return getBookByIdResult.ConvertToActionResult();
 		}
 
 		// POST api/books
@@ -48,16 +48,10 @@ namespace library_RESTful.Controllers
 		{
 			var createResult = await _sender.Send(command, _cts.Token);
 
-			switch (createResult.Status)
-			{
-				case CommandStatus.Success:
-					if (createResult.Value is not Book book)
-						break;
-					return CreatedAtAction(nameof(GetBooks), new { id = book.Id }, book);
-				case CommandStatus.BadRequest:
-					return BadRequest(createResult.Message);
-			}
-			return StatusCode(StatusCodes.Status500InternalServerError);
+			if (createResult.Status == CommandStatus.Success && createResult.Value is Book book)
+				return CreatedAtAction(nameof(GetBooks), new { id = book.Id }, book);
+
+			return createResult.ConvertToActionResult();
 		}
 
 		// PUT api/books/{id}
@@ -66,16 +60,10 @@ namespace library_RESTful.Controllers
 		{
 			var putResult = await _sender.Send(command, _cts.Token);
 
-			switch (putResult.Status)
-			{
-				case CommandStatus.Success:
-					return NoContent();
-				case CommandStatus.NotFound:
-					return NotFound();
-				case CommandStatus.BadRequest:
-					return BadRequest();
-			}
-			return StatusCode(StatusCodes.Status500InternalServerError);
+			if (putResult.Status == CommandStatus.Success)
+				return NoContent();
+
+			return putResult.ConvertToActionResult();
 		}
 
 		// DELETE api/books/{id}
@@ -83,18 +71,12 @@ namespace library_RESTful.Controllers
 		public async Task<ActionResult<Book>> DeleteBook(int id)
 		{
 			var command = new DeleteBookByIdCommand(id);
-			var commandResult = await _sender.Send(command, _cts.Token);
+			var deleteResult = await _sender.Send(command, _cts.Token);
 
-			switch (commandResult.Status)
-			{
-				case CommandStatus.Success:
-					return Ok(commandResult.Value);
-				case CommandStatus.NotFound:
-					return NotFound();
-				case CommandStatus.BadRequest:
-					return BadRequest();
-			}
-			return StatusCode(StatusCodes.Status500InternalServerError);
+			if (deleteResult.Status == CommandStatus.Success)
+				return Ok(deleteResult.Value);
+
+			return deleteResult.ConvertToActionResult();
 		}
 	}
 }

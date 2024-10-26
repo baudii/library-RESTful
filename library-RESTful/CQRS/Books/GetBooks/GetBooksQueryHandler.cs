@@ -1,11 +1,10 @@
 ﻿using library_RESTful.Data;
-using library_RESTful.Models;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
 namespace library_RESTful.CQRS
 {
-	public class GetBooksQueryHandler : IRequestHandler<GetBooksQuery, IEnumerable<Book>>
+	public class GetBooksQueryHandler : IRequestHandler<GetBooksQuery, CommandResult>
 	{
 		private readonly LibraryDbContext _context;
 
@@ -14,10 +13,11 @@ namespace library_RESTful.CQRS
 			_context = context;
 		}
 
-		public async Task<IEnumerable<Book>> Handle(GetBooksQuery request, CancellationToken cancellationToken)
+		public async Task<CommandResult> Handle(GetBooksQuery request, CancellationToken cancellationToken)
 		{
 			// Обработчик получения всех книг из БД
-			return await _context.Books.ToListAsync(cancellationToken);
+			var books = await _context.Books.ToListAsync(cancellationToken);
+			return new CommandResult(CommandStatus.Success, value: books);
 		}
 	}
 }

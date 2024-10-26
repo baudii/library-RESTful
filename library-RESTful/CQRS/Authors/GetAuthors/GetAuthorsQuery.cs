@@ -1,7 +1,6 @@
-﻿using library_RESTful.Models;
-using MediatR;
+﻿using MediatR;
 
 namespace library_RESTful.CQRS
 {
-	public record GetAuthorsQuery : IRequest<IEnumerable<Author>>;
+	public record GetAuthorsQuery : IRequest<CommandResult>;
 }

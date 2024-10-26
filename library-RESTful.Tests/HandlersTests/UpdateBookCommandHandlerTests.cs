@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace library_RESTful.Tests.HandlersTests
 {
-	public class UpodateBookCommandHandlerTests
+	public class UpdateBookCommandHandlerTests
 	{
 		[Fact]
 		public async Task Handle_ShouldReturnNotFound_WhenBookNotFound()

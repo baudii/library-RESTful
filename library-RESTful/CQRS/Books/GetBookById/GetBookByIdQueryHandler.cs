@@ -4,7 +4,7 @@ using MediatR;
 
 namespace library_RESTful.CQRS
 {
-	public class GetBookByIdQueryHandler : IRequestHandler<GetBookByIdQuery, Book?>
+	public class GetBookByIdQueryHandler : IRequestHandler<GetBookByIdQuery, CommandResult>
 	{
 		private readonly LibraryDbContext _context;
 
@@ -13,10 +13,11 @@ namespace library_RESTful.CQRS
 			_context = context;
 		}
 
-		public async Task<Book?> Handle(GetBookByIdQuery request, CancellationToken cancellationToken)
+		public async Task<CommandResult> Handle(GetBookByIdQuery request, CancellationToken cancellationToken)
 		{
 			// Обработчик получения книги с указанным Id
-			return await _context.Books.FindAsync(request.Id, cancellationToken);
+			var book = await _context.Books.FindAsync(request.Id, cancellationToken);
+			return new CommandResult(CommandStatus.Success, value: book);
 		}
 	}
 }
