@@ -1,11 +1,11 @@
-using library_RESTful.Models;
 using library_RESTful.CQRS;
-using Microsoft.AspNetCore.Mvc;
+using library_RESTful.Models;
 using MediatR;
+using Microsoft.AspNetCore.Mvc;
 
 namespace library_RESTful.Controllers
 {
-    [ApiController]
+	[ApiController]
 	[Route("api/[controller]")]
 	public class BooksController : ControllerBase
 	{
@@ -23,7 +23,7 @@ namespace library_RESTful.Controllers
 		public async Task<ActionResult<IEnumerable<Book>>> GetBooks()
 		{
 			var getBooksResult = await _sender.Send(new GetBooksQuery());
-			
+
 			if (getBooksResult.Status == CommandStatus.Success)
 				return Ok(getBooksResult.Value);
 

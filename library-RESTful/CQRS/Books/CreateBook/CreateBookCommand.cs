@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace library_RESTful.CQRS
 {
-    public record CreateBookCommand(
+	public record CreateBookCommand(
 		[Required(ErrorMessage = "Title is required")]
 		[MaxLength(50, ErrorMessage = "Title can't be longer than 50 characters")]
 		string Title,

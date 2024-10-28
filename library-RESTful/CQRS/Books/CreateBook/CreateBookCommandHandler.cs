@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace library_RESTful.CQRS
 {
-    public class CreateBookCommandHandler : IRequestHandler<CreateBookCommand, CommandResult>
+	public class CreateBookCommandHandler : IRequestHandler<CreateBookCommand, CommandResult>
 	{
 		private readonly LibraryDbContext _context;
 		public CreateBookCommandHandler(LibraryDbContext context)
@@ -49,7 +49,7 @@ namespace library_RESTful.CQRS
 				PublishedYear = request.PublishedYear,
 				AuthorId = author.Id
 			};
-			
+
 			// Добавляем в БД и возвращаем Success
 			await _context.Books.AddAsync(book, cancellationToken);
 			await _context.SaveChangesAsync(cancellationToken);

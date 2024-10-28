@@ -1,5 +1,4 @@
-﻿using library_RESTful.Models;
-using MediatR;
+﻿using MediatR;
 using System.ComponentModel.DataAnnotations;
 
 namespace library_RESTful.CQRS

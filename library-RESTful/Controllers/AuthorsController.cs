@@ -1,7 +1,7 @@
-﻿using library_RESTful.Models;
-using library_RESTful.CQRS;
-using Microsoft.AspNetCore.Mvc;
+﻿using library_RESTful.CQRS;
+using library_RESTful.Models;
 using MediatR;
+using Microsoft.AspNetCore.Mvc;
 
 namespace library_RESTful.Controllers
 {

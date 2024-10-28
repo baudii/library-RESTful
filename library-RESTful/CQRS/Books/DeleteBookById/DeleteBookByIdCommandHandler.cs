@@ -1,5 +1,4 @@
 ﻿using library_RESTful.Data;
-using library_RESTful.Models;
 using MediatR;
 
 namespace library_RESTful.CQRS
@@ -15,7 +14,7 @@ namespace library_RESTful.CQRS
 		public async Task<CommandResult> Handle(DeleteBookByIdCommand request, CancellationToken cancellationToken)
 		{
 			// Обработчик удаления книги с указанным Id
-			
+
 			var book = await _context.Books.FindAsync(request.Id);
 			if (book == null)
 				// Если книга с таким Id не существует в БД, возваращаем NotFound
