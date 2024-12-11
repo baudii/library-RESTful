@@ -14,11 +14,17 @@ namespace library_RESTful.CQRS
 		}
 
 		public async Task<CommandResult> Handle(CreateBookCommand request, CancellationToken cancellationToken)
+		public async Task<CommandResult> Handle(CreateBookCommand request, CancellationToken token)
 		{
 			if (!await DoesAuthorExist(request, token))
 				return new CommandResult(CommandStatus.BadRequest, message: $"Author with id={request.AuthorId} doesn't exist");
 
+			if (await DoesBookExist(request, token))
+				return new CommandResult(CommandStatus.BadRequest, message: $"Identical book already exists");
 
+			var book = await CreateBook(request, token);
+			return new CommandResult(CommandStatus.Success, value: book);
+		}
 
 			// Проверяем существует ли книга с такими данными
 			var bookExists = await _context.Books.AnyAsync(b =>
