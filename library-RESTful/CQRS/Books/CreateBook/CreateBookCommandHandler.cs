@@ -43,6 +43,12 @@ namespace library_RESTful.CQRS
 				var result = new CommandResult(CommandStatus.BadRequest, message: $"Identical book already exists");
 				return result;
 			}
+		private async Task<bool> DoesAuthorExist(CreateBookCommand request, CancellationToken token)
+		{
+			var author = await _context.Authors.FindAsync(request.AuthorId, token);
+
+			return author != null;
+		}
 
 			// Создаем экземпляр книги
 			var book = new Book
