@@ -15,8 +15,8 @@ namespace library_RESTful.CQRS
 
 		public async Task<CommandResult> Handle(CreateBookCommand request, CancellationToken cancellationToken)
 		{
-			// Обработчик создания книг
-			var author = await _context.Authors.FindAsync(request.AuthorId, cancellationToken);
+			if (!await DoesAuthorExist(request, token))
+				return new CommandResult(CommandStatus.BadRequest, message: $"Author with id={request.AuthorId} doesn't exist");
 
 			if (author == null)
 			{
