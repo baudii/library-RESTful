@@ -51,12 +51,15 @@ namespace library_RESTful.CQRS
 		}
 
 			// Создаем экземпляр книги
+		private async Task<Book> CreateBook(CreateBookCommand request, CancellationToken token)
+		{
 			var book = new Book
 			{
 				Title = request.Title,
 				Genre = request.Genre,
 				PublishedYear = request.PublishedYear,
 				AuthorId = author.Id
+				AuthorId = request.AuthorId
 			};
 
 			// Добавляем в БД и возвращаем Success
