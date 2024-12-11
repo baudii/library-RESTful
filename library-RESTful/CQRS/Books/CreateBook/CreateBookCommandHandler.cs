@@ -18,12 +18,6 @@ namespace library_RESTful.CQRS
 			if (!await DoesAuthorExist(request, token))
 				return new CommandResult(CommandStatus.BadRequest, message: $"Author with id={request.AuthorId} doesn't exist");
 
-			if (author == null)
-			{
-				// Предполагаем, что автор существует и корректно указан, иначе возвращаем BadRequest
-				var result = new CommandResult(CommandStatus.BadRequest, message: $"Author with id={request.AuthorId} doesn't exist");
-				return result;
-			}
 
 
 			// Проверяем существует ли книга с такими данными
