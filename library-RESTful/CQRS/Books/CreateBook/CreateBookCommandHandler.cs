@@ -13,7 +13,6 @@ namespace library_RESTful.CQRS
 			_context = context;
 		}
 
-		public async Task<CommandResult> Handle(CreateBookCommand request, CancellationToken cancellationToken)
 		public async Task<CommandResult> Handle(CreateBookCommand request, CancellationToken token)
 		{
 			if (!await DoesAuthorExist(request, token))
@@ -26,13 +25,17 @@ namespace library_RESTful.CQRS
 			return new CommandResult(CommandStatus.Success, value: book);
 		}
 
-			// Проверяем существует ли книга с такими данными
-			var bookExists = await _context.Books.AnyAsync(b =>
+		private async Task<bool> DoesBookExist(CreateBookCommand request, CancellationToken token)
+		{
+			return await _context.Books.AnyAsync(b =>
 				b.Title == request.Title &&
 				b.Genre == request.Genre &&
 				b.PublishedYear == request.PublishedYear &&
 				b.AuthorId == author.Id
 			);
+				b.AuthorId == request.AuthorId
+			, token);
+		}
 
 			if (bookExists)
 			{
