@@ -5,12 +5,13 @@ namespace library_RESTful.CQRS
 {
 	public class UpdateBookCommandHandler : IRequestHandler<UpdateBookCommand, CommandResult>
 	{
-
 		private readonly LibraryDbContext _context;
+
 		public UpdateBookCommandHandler(LibraryDbContext context)
 		{
 			_context = context;
 		}
+
 		public async Task<CommandResult> Handle(UpdateBookCommand request, CancellationToken cancellationToken)
 		{
 			// Обработчик изменения данных книги с указанным Id
