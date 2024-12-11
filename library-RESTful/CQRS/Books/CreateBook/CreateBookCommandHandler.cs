@@ -31,18 +31,10 @@ namespace library_RESTful.CQRS
 				b.Title == request.Title &&
 				b.Genre == request.Genre &&
 				b.PublishedYear == request.PublishedYear &&
-				b.AuthorId == author.Id
-			);
 				b.AuthorId == request.AuthorId
 			, token);
 		}
 
-			if (bookExists)
-			{
-				// Если книга с такими данными уже существует, возвращаем BadReqyest
-				var result = new CommandResult(CommandStatus.BadRequest, message: $"Identical book already exists");
-				return result;
-			}
 		private async Task<bool> DoesAuthorExist(CreateBookCommand request, CancellationToken token)
 		{
 			var author = await _context.Authors.FindAsync(request.AuthorId, token);
@@ -50,7 +42,6 @@ namespace library_RESTful.CQRS
 			return author != null;
 		}
 
-			// Создаем экземпляр книги
 		private async Task<Book> CreateBook(CreateBookCommand request, CancellationToken token)
 		{
 			var book = new Book
@@ -58,14 +49,12 @@ namespace library_RESTful.CQRS
 				Title = request.Title,
 				Genre = request.Genre,
 				PublishedYear = request.PublishedYear,
-				AuthorId = author.Id
 				AuthorId = request.AuthorId
 			};
 
-			// Добавляем в БД и возвращаем Success
-			await _context.Books.AddAsync(book, cancellationToken);
-			await _context.SaveChangesAsync(cancellationToken);
-			return new CommandResult(CommandStatus.Success, value: book);
+			var result = await _context.Books.AddAsync(book, token);
+			await _context.SaveChangesAsync(token);
+			return result.Entity;
 		}
 	}
 }
